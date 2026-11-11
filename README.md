@@ -37,47 +37,78 @@ dsh-qjysqjy/
 |---|---|---|
 | [`@qjysqjy/dsh-prompt-optimizer`](packages/prompt-optimizer/README.md) | 把输入框草稿就地改写为结构化提示词，一键还原、真实取消 | 0.2.0，已发布到 npm |
 
-## 安装一个插件
+## 安装
 
-插件是普通的 DSH bundle，装法就是 DSH 装 bundle 的那一种。三种来源，按你的场景挑一个。
+按你用的宿主挑一种。四种方式装的是同一个 bundle，区别只在来源和是否需要重启。
 
-### 从 npm 安装（给使用者）
+### 方式一：DSH Desktop 里点着装（推荐）
 
-最简单，依赖会一起装好：
+1. 打开 DeepSeek Harness Desktop
+2. 点左侧边栏的 **插件**
+3. 点右上角 **添加插件**
+4. 在包名输入框填 `@qjysqjy/dsh-prompt-optimizer`，或者点输入框右边的箭头选 **安装第三方插件**（同一个对话框，支持包名、Git 仓库、本地目录三种来源）
+5. 点 **安装**，装完在完成页点 **立即启用**
 
-```text
-plugin_manager install_bundle @qjysqjy/dsh-prompt-optimizer
+对话框里的“安装源”默认会探测最快的 registry，一般不用动。装完如果提示需要重启，按提示重启。
+
+> 侧边栏的 **插件** 页才是可读写的那一页。**设置 → 内置插件** 是只读列表，只能看，不能装。
+
+### 方式二：命令行（`dsh` 可用时）
+
+```sh
+dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer
 ```
 
-也可以填精确版本 `@qjysqjy/dsh-prompt-optimizer@0.2.0`，或在 **侧边栏 → 插件 → 添加插件** 里输入同一个包名。
+跑 web profile 的换成 `--profile web`，重启 `dsh web` 生效。
 
-### 直接从 GitHub 安装（想跟最新提交）
+三条必须知道的约束：
+
+- **必须用 Desktop 自带的 `dsh` 命令。** 从 npm 或别处装的 `dsh` 会拒绝 `--profile desktop`，报 `profile "desktop" is managed exclusively by the Electron application`。这个命令从应用菜单 **管理 dsh 命令…** 安装（Windows 上菜单栏默认隐藏，先从窗口菜单唤出），装完开个新终端跑 `dsh --version` 验证。
+- **执行前完全退出 Desktop**，不只是关窗口。Windows 要从托盘右键退出。否则会和运行中的进程抢 profile 目录。
+- 装完再打开 Desktop 才会加载新插件。
+
+### 方式三：从 Git 仓库装（跟最新提交）
+
+包名输入框里换成下面这行，或命令行 `dsh plugin --profile desktop add github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer`：
 
 ```text
-plugin_manager install_bundle github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer
+github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer
 ```
 
-`#path:` 片段指向 monorepo 里的包目录。这条路径装的是 `main` 上的最新提交，会随仓库变动，适合试用而不是长期使用。
+`#path:` 片段指向 monorepo 里的包目录，**不能省**——仓库根不是可安装的 bundle。这条路装的是 `main` 上的最新提交，lockfile 会把 commit 钉住，适合试用而不是长期使用。
 
-### 从本地克隆安装（改代码时）
+### 方式四：本地目录（改代码时）
 
-先装依赖，再装插件：
+先在仓库根装依赖：
 
 ```bash
 pnpm install
 ```
 
+再把**包目录的绝对路径**填进包名输入框，例如：
+
 ```text
-plugin_manager install_bundle <本仓库中该包的绝对路径>
+D:\path\to\dsh-qjysqjy\packages\prompt-optimizer
 ```
 
-例如 `<仓库根>/packages/prompt-optimizer`。
+**`pnpm install` 这一步不能跳。** 本地目录来源只做链接，**不会**为它装依赖。包里的 `import '@deepseek-ai/schemastery'` 要靠仓库根的 `node_modules` 解析——少了它，安装报告 `application: failed` 与 `ERR_MODULE_NOT_FOUND`，而 profile 里的记录看起来还是成功的。`pnpm-workspace.yaml` 固定了 `nodeLinker: hoisted`，因为 Windows 上的 DSH Host 进程读不了 WSL 创建的符号链接。走 npm 或 Git 来源时没有这个问题，pnpm 会把依赖装进 profile。
 
-**这一步不能跳。** `install_bundle` 对本地路径只把包目录链接进 profile，**不会**为它安装依赖。包里的 `import '@deepseek-ai/schemastery'` 要靠仓库根的 `node_modules` 解析——少了它，安装结果会是 `application: failed`，报 `ERR_MODULE_NOT_FOUND`。`pnpm-workspace.yaml` 固定了 `nodeLinker: hoisted`，因为 Windows 上的 DSH Host 进程读不了 WSL 创建的符号链接。走 npm 或 GitHub 时没有这个问题，pnpm 会自己把依赖装进 profile。
+改完代码：`lib/client.js` 刷新页面即可；`lib/index.js` 要禁用再启用插件行（Host 模块已在进程里）。
 
-本地安装后改代码：改 `lib/client.js` 刷新页面即可；改 `lib/index.js` 需要重新应用插件行（Host 模块已在进程里）。
+### 装好之后
 
-装好后在 **侧边栏 → 插件** 里能看到该包一行，标题与图标来自包内 `locale/*.json` 与 `icon.svg`，不需要先激活插件。（**设置** 里的插件列表只读。）
+插件页里出现一行，标题与图标来自包内 `locale/*.json` 与 `icon.svg`，**未激活时也能读到**。打开任一会话，输入框工具行、模型选择器左侧就是优化控件。
+
+### 升级与卸载
+
+npm 装的包不会自己跟着新版本走，先卸载再装：
+
+```sh
+dsh plugin --profile desktop remove @qjysqjy/dsh-prompt-optimizer
+dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer@0.2.0
+```
+
+或在插件页里对该条目操作。**刚发布的版本建议写精确版本号**（`@qjysqjy/dsh-prompt-optimizer@0.2.0`）：pnpm 的新版本等待期可能把浮动范围静默解析回旧版本，两种写法都会“安装成功”，表现是升级跑完了版本却没变。
 
 ## 新增一个插件
 

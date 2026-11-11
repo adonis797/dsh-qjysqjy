@@ -24,7 +24,7 @@ DSH `0.2.2-rc.1`，Web UI，CDP 驱动真实页面逐条走过：
 
 | 场景 | 结果 |
 |---|---|
-| 空草稿 | 按钮 `disabled`，`title` 为「草稿为空，无需优化」，无 network 请求 |
+| 空草稿 | 按钮 `disabled`，`title` 为“草稿为空，无需优化”，无 network 请求 |
 | 正常改写 | 200 回填，按钮变 ↩️，`data-done` 置位 |
 | 请求中取消 | `fetch` 收到 `AbortError`，`signal.aborted === true`，草稿不变 |
 | 请求中继续输入 | 请求照常返回 200，结果被丢弃，用户新写的字保留 |

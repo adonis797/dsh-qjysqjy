@@ -2,22 +2,36 @@
 
 ## 安装来源总览
 
-| 来源 | 写法 | 依赖 | 适合 |
+| 来源 | 桌面版写法 | `dsh web` 写法 | 依赖 |
 |---|---|---|---|
-| npm | `plugin_manager install_bundle @qjysqjy/dsh-prompt-optimizer` | pnpm 自动装 | 日常使用 |
-| GitHub | `plugin_manager install_bundle github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer` | pnpm 自动装 | 尝鲜 `main` |
-| 本地克隆 | `plugin_manager install_bundle <仓库根>/packages/…` | 要自己先 `pnpm install` | 改代码 |
+| npm | 插件页 → 添加插件 → 填包名 | `dsh plugin --profile web add @qjysqjy/dsh-prompt-optimizer` | pnpm 自动装 |
+| Git | 同上，填 `github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer` | `dsh plugin --profile web add github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer` | pnpm 自动装 |
+| 本地目录 | 同上，填包目录**绝对路径** | `dsh plugin --profile web add <包目录绝对路径>` | **要自己先 `pnpm install`** |
 
-下面两节分别讲清 GitHub 与本地克隆的细节；从 npm 安装没有额外条件，填包名即可。
+## 桌面版的三条硬约束
+
+这三条不是建议，踩了会失败：
+
+1. **`--profile desktop` 只有 Desktop 自带的 `dsh` 能操作。** `@deepseek-ai/dsh/lib/bin.js` 里的 `rejectElectronProfile` 会对其他任何安装抛出 `profile "desktop" is managed exclusively by the Electron application`。`manageDesktopProfile: true` 只在 `dsh-desktop-host/lib/cli.js` 的 `runDesktopCli` 里传入。所以别用 `npm i -g` 或 `npx` 那份去管 Desktop 的插件；用应用菜单 **管理 dsh 命令…** 装的那个。
+2. **命令行操作前必须完全退出 Desktop。** `dsh plugin --profile desktop` 会对 profile 的 `package.json` 加写锁（`lockWaitMs` 12 万毫秒），也和运行中的 Host 抢同一份清单。
+3. **Desktop 至少启动过一次**，`$DSH_HOME/profiles/desktop/package.json` 才存在；否则报 `Open DeepSeek Harness Desktop once to initialize its profile`。
+
+## 插件页 vs 设置
+
+- **侧边栏 → 插件**：可读写。安装、启停、卸载、改配置都在这一页。
+- **设置 → 内置插件**：只读列表，看运行状态用。
+
+两个页面的中文文案来自 `dsh-client-ui-plugin-manager` 与 `dsh-client-ui-settings-plugins` 的 locale，“插件”与“内置插件”是两个不同入口，别混。
 
 ## 本地安装（开发期）
 
-先在仓库根执行 `pnpm install`。`install_bundle` 只做链接，不碰包的依赖；缺依赖时安装报告 `application: failed` 与 `ERR_MODULE_NOT_FOUND`，而 profile 里的记录看起来是成功的。
+先在仓库根执行 `pnpm install`。本地目录来源只做链接，不碰包的依赖；缺依赖时安装报告 `application: failed` 与 `ERR_MODULE_NOT_FOUND`，而 profile 里的记录看起来是成功的。
 
-`plugin_manager install_bundle` 的 `target` 是**包目录的绝对路径**：
+`plugin_manager install_bundle` 的 `target` 是**包目录的绝对路径**（`dsh plugin ... add` 用的也是同一种写法）：
 
 ```text
 plugin_manager install_bundle <仓库根>/packages/prompt-optimizer
+dsh plugin --profile desktop add <仓库根>/packages/prompt-optimizer
 ```
 
 它会把这个包链接进当前 profile（`<profile>/package.json` 的 dependency 记成 `link:...`，并把包名加进 `dsh.profile.bundles`）。之后：
@@ -30,15 +44,17 @@ plugin_manager install_bundle <仓库根>/packages/prompt-optimizer
 
 **链接安装不会重新拷贝代码**：profile 里的那份就是仓库里的这份。所以“改了没生效”通常是 Host 模块缓存，而不是文件没同步。
 
-## 从 GitHub 安装（给别人用）
+## 从 Git 安装
 
 ```text
-plugin_manager install_bundle github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer
+github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer
 ```
 
 `#path:` 片段指向 monorepo 里的包目录，去掉就是仓库根——仓库根不是可安装的 bundle，会失败。这条来源装的是 `main` 上的最新提交，lockfile 会钉住当时的 commit；要某个确定的版本请用 npm 加精确版本号。
 
 Git / 压缩包来源的 `engines.dsh` 检查发生在**抓取之后**：不满足时安装会把 profile 清单与锁文件恢复原样，再报告失败。注册表来源则在 `pnpm` 运行前就拒绝，什么都不会下载。
+
+GitHub 来源在 pnpm 之前还有一次 `git ls-remote` 预检（默认 5 秒超时，只探仓库可达性，会剥掉 `#` 之后的内容）。预检失败会带 `failedAt: 'spec-host'` 返回，不进入下载。
 
 ## npm 发布
 
@@ -82,11 +98,11 @@ npm pack --dry-run     # 先核对实际打包清单
 npm publish            # 私有 registry 加 --registry
 ```
 
-⚠️ 新包的默认发布策略要求 **2FA 或带 bypass-2FA 的 granular token**。账号没开 2FA 时，普通 token 会在 PUT 阶段被 403 拒绝，报「Two-factor authentication or granular access token with bypass 2fa enabled is required」。届时到 `https://www.npmjs.com/settings/<用户名>/tokens` 建一个 granular token，勾上 **Bypass two-factor authentication**，权限给 `Read and write`、范围选 `@qjysqjy`，写进 `~/.npmrc` 的 `//registry.npmjs.org/:_authToken=`。
+⚠️ 新包的默认发布策略要求 **2FA 或带 bypass-2FA 的 granular token**。账号没开 2FA 时，普通 token 会在 PUT 阶段被 403 拒绝，报“Two-factor authentication or granular access token with bypass 2fa enabled is required”。届时到 `https://www.npmjs.com/settings/<用户名>/tokens` 建一个 granular token，勾上 **Bypass two-factor authentication**，权限给 `Read and write`、范围选 `@qjysqjy`，写进 `~/.npmrc` 的 `//registry.npmjs.org/:_authToken=`。
 
 发布前自检：
 
-1. **`npm pack --dry-run` 里每个运行时文件都在。** 本地是软链接安装，`files` 不生效；发布后 `files` 才生效，缺文件就是「装上了但按钮没有」。
+1. **`npm pack --dry-run` 里每个运行时文件都在。** 本地是软链接安装，`files` 不生效；发布后 `files` 才生效，缺文件就是“装上了但按钮没有”。
 2. **`engines.dsh` 覆盖你实测过的版本**，并且没有写成一个宽到无意义的范围。市场用它来隐藏不兼容项，写宽了等于把风险转给用户。
 3. **`private` 为 `false` 或不存在**，`version` 已递增。
 4. **包内 README 是给人看的最终版。** npm 页面上渲染的是 tarball 里那份，改了仓库里的 README 但不发版，页面就是旧的。
@@ -109,13 +125,15 @@ npm publish            # 私有 registry 加 --registry
 
 从 npm 装的包不会自己跟着新版本走，要**先卸载再装**：
 
-```text
-plugin_manager remove_bundle @qjysqjy/dsh-prompt-optimizer
-plugin_manager install_bundle @qjysqjy/dsh-prompt-optimizer
+```sh
+dsh plugin --profile desktop remove @qjysqjy/dsh-prompt-optimizer
+dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer@0.2.0
 ```
 
 从 GitHub 装的同理，重装才会拉到新提交。判断装的是哪一份，看 profile 的 `package.json`：`link:` 是本地路径，`github:` 是仓库，其余是 registry 版本。
 
+**刚发布的版本写精确版本号。** pnpm 有 `minimumReleaseAge` 等待期（默认 24 小时），浮动范围会被静默压回上一个版本，而两种写法都报告成功——表现是“升级跑完了、版本没变”。已经踩过一次：profile 里 `@qjysqjy/dsh-prompt-optimizer` 被记成 `^0.1.0`，而 `^0.1.0` 的上界是 `0.2.0`（`0.x` 的 caret 只锁 minor），所以 0.2.0 发布后它仍然停在 0.1.0。写精确版本号，或把包名加进 profile 的 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude`。
+
 ## 卸载
 
-用 `plugin_manager remove_bundle <包名>`，不要手动删 profile 的 `package.json` 条目。手动删会留下指向不存在目录的 `link:`，下次启动直接失败。
+用 `plugin_manager remove_bundle <包名>` 或 `dsh plugin --profile desktop remove <包名>`，不要手动删 profile 的 `package.json` 条目。手动删会留下指向不存在目录的 `link:`，下次启动直接失败。

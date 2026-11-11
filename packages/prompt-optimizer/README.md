@@ -16,13 +16,19 @@
 
 ## 安装
 
-```text
-plugin_manager install_bundle @qjysqjy/dsh-prompt-optimizer
+**DSH Desktop：** 左侧边栏 **插件** → **添加插件** → 填包名 → **安装** → **立即启用**。
+
+**命令行**（`dsh` 命令来自应用菜单“管理 dsh 命令…”）：
+
+```sh
+dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer
 ```
 
-也可以在 **侧边栏 → 插件 → 添加插件** 里输入同一个包名。想跟最新提交就改用 `github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer`；改代码则从本地克隆装，先在仓库根 `pnpm install`。
+跑 `dsh web` 的用 `--profile web`，重启后生效。命令行的两条约束：必须用 Desktop 自带的 `dsh`（别处的会拒绝 `desktop` profile），且执行前要完全退出 Desktop。
 
-装好刷新页面即可，控件出现在输入框工具行、模型选择器左侧。
+想跟最新提交就填 `github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer`；改代码就填包目录的绝对路径，但先在仓库根 `pnpm install`——本地目录只做链接，不装依赖。
+
+装好刷新页面（或用命令行装的则重开 Desktop），控件出现在输入框工具行、模型选择器左侧。
 
 ## 配置
 
