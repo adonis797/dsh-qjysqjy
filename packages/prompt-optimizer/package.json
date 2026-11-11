@@ -1,0 +1,70 @@
+{
+  "name": "@qjysqjy/dsh-prompt-optimizer",
+  "version": "0.1.0",
+  "description": "Rewrites the composer draft into a structured prompt in place, with one-click undo and true cancellation. 把输入框草稿就地改写为结构化提示词，支持一键还原与真实取消。",
+  "type": "module",
+  "license": "MIT",
+  "author": "qjysqjy",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adonis797/dsh-qjysqjy.git",
+    "directory": "packages/prompt-optimizer"
+  },
+  "homepage": "https://github.com/adonis797/dsh-qjysqjy/tree/main/packages/prompt-optimizer#readme",
+  "bugs": {
+    "url": "https://github.com/adonis797/dsh-qjysqjy/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "prompt",
+    "prompt-optimizer",
+    "composer"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/optimize.js",
+    "lib/prompt.js",
+    "lib/client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE",
+    "screenshots/*.jpg"
+  ],
+  "scripts": {
+    "test": "node --test test/unit.test.js test/client.test.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.4"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  }
+}

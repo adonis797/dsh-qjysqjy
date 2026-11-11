@@ -1,0 +1,6 @@
+# Host half of the plugin. Service access would be declared by the module's own
+# `export const inject`; this row must NOT carry an `inject` field, because a
+# row-level `inject` would also lock the Client half out of its services.
+- insert:
+    - id: qjysqjy-__SLUG__
+      name: '@qjysqjy/dsh-__SLUG__'

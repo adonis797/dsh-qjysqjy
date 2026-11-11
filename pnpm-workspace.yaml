@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+
+# A plugin's node_modules is read by the Windows DSH Host process, which cannot
+# traverse the symlinks WSL creates. Hoisted linking materializes real
+# directories, so a package resolves `@deepseek-ai/schemastery` the same way it
+# does once installed from a registry tarball.
+nodeLinker: hoisted

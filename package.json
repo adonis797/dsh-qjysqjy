@@ -1,0 +1,16 @@
+{
+  "name": "dsh-qjysqjy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "QJYSQJY's DeepSeek Harness plugin collection: one package per plugin, shared conventions, one verification command.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.28.5",
+  "scripts": {
+    "verify": "node scripts/verify.mjs",
+    "new": "node scripts/new-plugin.mjs"
+  }
+}

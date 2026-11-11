@@ -1,0 +1,24 @@
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# 打包产物：只在发布时生成
+*.tgz
+
+# 本地环境与个人配置
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+
+# 构建与测试产物
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# 缓存与包管理器状态
+.cache/
+.pnpm-store/

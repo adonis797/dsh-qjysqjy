@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.jpg binary
+*.png binary
+*.svg text
+pnpm-lock.yaml linguist-generated
