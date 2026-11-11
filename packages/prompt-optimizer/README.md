@@ -16,19 +16,19 @@
 
 ## 安装
 
-**DSH Desktop：** 左侧边栏 **插件** → **添加插件** → 填包名 → **安装** → **立即启用**。
+**DSH Desktop：** 左侧边栏 **插件** → **添加插件** → 填包名 `@qjysqjy/dsh-prompt-optimizer` → **安装** → **立即启用**。
 
-**命令行**（`dsh` 命令来自应用菜单“管理 dsh 命令…”）：
+同一条输入框也能填 Git 源 `github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer`（跟 `main` 最新提交），或包目录的绝对路径（改代码时用，但要先在仓库根 `pnpm install`——本地目录只做链接，不装依赖）。
+
+没有 Desktop 时用命令行，`dsh` 命令来自应用菜单“管理 dsh 命令…”：
 
 ```sh
-dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer
+dsh plugin --profile web add @qjysqjy/dsh-prompt-optimizer
 ```
 
-跑 `dsh web` 的用 `--profile web`，重启后生效。命令行的两条约束：必须用 Desktop 自带的 `dsh`（别处的会拒绝 `desktop` profile），且执行前要完全退出 Desktop。
+装好刷新页面（命令行装的要重启 DSH），控件出现在输入框工具行、模型选择器左侧。
 
-想跟最新提交就填 `github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer`；改代码就填包目录的绝对路径，但先在仓库根 `pnpm install`——本地目录只做链接，不装依赖。
-
-装好刷新页面（或用命令行装的则重开 Desktop），控件出现在输入框工具行、模型选择器左侧。
+**升级：** 插件页出现 **可更新** 时点 **更新**，升级后重启 DSH 生效。注意 `0.x` 的 caret 范围只锁 minor——profile 里记成 `^0.1.0` 时不会自动跟到 0.2.0，需要卸载后用精确版本重装。
 
 ## 配置
 

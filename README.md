@@ -39,21 +39,44 @@ dsh-qjysqjy/
 
 ## 安装
 
-按你用的宿主挑一种。四种方式装的是同一个 bundle，区别只在来源和是否需要重启。
+推荐路径只有一条：在 DSH Desktop 的插件页里点着装。其余方式列在后面，供没有 Desktop 或需要跟源码的场景使用。
 
-### 方式一：DSH Desktop 里点着装（推荐）
+### 在 DSH Desktop 里装（推荐）
 
 1. 打开 DeepSeek Harness Desktop
 2. 点左侧边栏的 **插件**
 3. 点右上角 **添加插件**
-4. 在包名输入框填 `@qjysqjy/dsh-prompt-optimizer`，或者点输入框右边的箭头选 **安装第三方插件**（同一个对话框，支持包名、Git 仓库、本地目录三种来源）
+4. 在包名输入框填 `@qjysqjy/dsh-prompt-optimizer`
 5. 点 **安装**，装完在完成页点 **立即启用**
 
 对话框里的“安装源”默认会探测最快的 registry，一般不用动。装完如果提示需要重启，按提示重启。
 
 > 侧边栏的 **插件** 页才是可读写的那一页。**设置 → 内置插件** 是只读列表，只能看，不能装。
 
-### 方式二：命令行（`dsh` 可用时）
+同一条输入框还能填其他来源：Git 仓库 `github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer`（跟 `main` 最新提交），或包目录的绝对路径（改代码时用，见下）。点输入框右边的箭头选 **安装第三方插件** 打开的是同一个对话框。
+
+### 升级
+
+插件页会自己检查新版本。条目上出现 **可更新** 标记时，点 **更新** 即可——升级过程会先移除旧版本再装新版本，失败时自动回滚到原来的版本。
+
+**升级后要重启 DSH。** 页面提示“已安装 x.y.z，重启后生效”时，Host 模块仍在旧进程里。
+
+没有出现更新标记时，检查两件事：一是插件页的 **刷新** 按钮（手动刷新才会重新读版本），二是下面这条版本固化陷阱。
+
+### 版本固化陷阱
+
+profile 的 `package.json` 记的是安装时解析到的范围。用 `pnpm add` 装的包会被记成 `^x.y.z`，而 **`0.x` 的 caret 只锁 minor**：`^0.1.0` 的上界是 `0.2.0`，所以 0.2.0 发布后它不会跟过来。
+
+本机就踩过这个：profile 里是 `^0.1.0`，实际装的还是 0.1.0，而 0.2.0 早已发布。要跨 minor 升级，卸载后重装并写精确版本：
+
+```sh
+dsh plugin --profile desktop remove @qjysqjy/dsh-prompt-optimizer
+dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer@0.2.0
+```
+
+自测过：新目录里 `pnpm add @qjysqjy/dsh-prompt-optimizer` 直接拿到 0.2.0 并记成 `^0.2.0`，写精确版本 `@0.2.0` 也装得下来，不会被新版本等待期挡住。
+
+### 命令行（`dsh` 可用时）
 
 ```sh
 dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer
@@ -67,17 +90,7 @@ dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer
 - **执行前完全退出 Desktop**，不只是关窗口。Windows 要从托盘右键退出。否则会和运行中的进程抢 profile 目录。
 - 装完再打开 Desktop 才会加载新插件。
 
-### 方式三：从 Git 仓库装（跟最新提交）
-
-包名输入框里换成下面这行，或命令行 `dsh plugin --profile desktop add github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer`：
-
-```text
-github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer
-```
-
-`#path:` 片段指向 monorepo 里的包目录，**不能省**——仓库根不是可安装的 bundle。这条路装的是 `main` 上的最新提交，lockfile 会把 commit 钉住，适合试用而不是长期使用。
-
-### 方式四：本地目录（改代码时）
+### 本地目录（改代码时）
 
 先在仓库根装依赖：
 
@@ -85,13 +98,13 @@ github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer
 pnpm install
 ```
 
-再把**包目录的绝对路径**填进包名输入框，例如：
+再把**包目录的绝对路径**填进插件页的包名输入框，例如：
 
 ```text
 D:\path\to\dsh-qjysqjy\packages\prompt-optimizer
 ```
 
-**`pnpm install` 这一步不能跳。** 本地目录来源只做链接，**不会**为它装依赖。包里的 `import '@deepseek-ai/schemastery'` 要靠仓库根的 `node_modules` 解析——少了它，安装报告 `application: failed` 与 `ERR_MODULE_NOT_FOUND`，而 profile 里的记录看起来还是成功的。`pnpm-workspace.yaml` 固定了 `nodeLinker: hoisted`，因为 Windows 上的 DSH Host 进程读不了 WSL 创建的符号链接。走 npm 或 Git 来源时没有这个问题，pnpm 会把依赖装进 profile。
+**`pnpm install` 这一步不能跳。** 本地目录来源只做链接，**不会**为它装依赖。包里的 `import '@deepseek-ai/schemastery'` 要靠仓库根的 `node_modules` 解析——少了它，安装报告 `application: failed` 与 `ERR_MODULE_NOT_FOUND`，而 profile 里的记录看起来还是成功的。`pnpm-workspace.yaml` 固定了 `nodeLinker: hoisted`，因为 Windows 上的 DSH Host 进程读不了 WSL 创建的符号链接。走 registry 或 Git 来源时没有这个问题，pnpm 会把依赖装进 profile。
 
 改完代码：`lib/client.js` 刷新页面即可；`lib/index.js` 要禁用再启用插件行（Host 模块已在进程里）。
 
@@ -99,16 +112,15 @@ D:\path\to\dsh-qjysqjy\packages\prompt-optimizer
 
 插件页里出现一行，标题与图标来自包内 `locale/*.json` 与 `icon.svg`，**未激活时也能读到**。打开任一会话，输入框工具行、模型选择器左侧就是优化控件。
 
-### 升级与卸载
+### 卸载
 
-npm 装的包不会自己跟着新版本走，先卸载再装：
+插件页里点该条目，选删除。命令行等价写法（需先完全退出 Desktop）：
 
 ```sh
 dsh plugin --profile desktop remove @qjysqjy/dsh-prompt-optimizer
-dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer@0.2.0
 ```
 
-或在插件页里对该条目操作。**刚发布的版本建议写精确版本号**（`@qjysqjy/dsh-prompt-optimizer@0.2.0`）：pnpm 的新版本等待期可能把浮动范围静默解析回旧版本，两种写法都会“安装成功”，表现是升级跑完了版本却没变。
+不要手动删 profile 的 `package.json` 条目。手动删会留下指向不存在目录的 `link:`，下次启动直接失败。
 
 ## 新增一个插件
 

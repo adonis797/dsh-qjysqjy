@@ -1,5 +1,15 @@
 # 安装与发布
 
+## 推荐路径：插件页点装
+
+日常使用走插件页，不需要命令行：
+
+1. 侧边栏 **插件** → 右上角 **添加插件**
+2. 包名输入框填 `@qjysqjy/dsh-prompt-optimizer`
+3. **安装** → 完成页 **立即启用**
+
+同一条输入框也接受 Git spec 与本地绝对路径，箭头菜单里的 **安装第三方插件** 打开的是同一个对话框。
+
 ## 安装来源总览
 
 | 来源 | 桌面版写法 | `dsh web` 写法 | 依赖 |
@@ -12,16 +22,24 @@
 
 这三条不是建议，踩了会失败：
 
-1. **`--profile desktop` 只有 Desktop 自带的 `dsh` 能操作。** `@deepseek-ai/dsh/lib/bin.js` 里的 `rejectElectronProfile` 会对其他任何安装抛出 `profile "desktop" is managed exclusively by the Electron application`。`manageDesktopProfile: true` 只在 `dsh-desktop-host/lib/cli.js` 的 `runDesktopCli` 里传入。所以别用 `npm i -g` 或 `npx` 那份去管 Desktop 的插件；用应用菜单 **管理 dsh 命令…** 装的那个。
-2. **命令行操作前必须完全退出 Desktop。** `dsh plugin --profile desktop` 会对 profile 的 `package.json` 加写锁（`lockWaitMs` 12 万毫秒），也和运行中的 Host 抢同一份清单。
+1. **`--profile desktop` 只有 Desktop 自带的 `dsh` 能操作。** `@deepseek-ai/dsh/lib/bin.js` 里的 `rejectElectronProfile` 会对其他任何安装抛出 `profile "desktop" is managed exclusively by the Electron application`。`manageDesktopProfile: true` 只在 `dsh-desktop-host/lib/cli.js` 的 `runDesktopCli` 里传入。所以别用 `npm i -g` 或 `npx` 那份去管 Desktop 的插件；用应用菜单 **管理 dsh 命令…** 装的那个。**走插件页点装则完全不受这条限制**，因为那是 Desktop 自己的进程在操作。
+2. **命令行操作前必须完全退出 Desktop。** `dsh plugin --profile desktop` 会对 profile 的 `package.json` 加写锁（`lockWaitMs` 12 万毫秒），也和运行中的 Host 抢同一份清单。插件页点装不需要退出——它就在应用里跑。
 3. **Desktop 至少启动过一次**，`$DSH_HOME/profiles/desktop/package.json` 才存在；否则报 `Open DeepSeek Harness Desktop once to initialize its profile`。
 
 ## 插件页 vs 设置
 
-- **侧边栏 → 插件**：可读写。安装、启停、卸载、改配置都在这一页。
+- **侧边栏 → 插件**：可读写。安装、升级、启停、卸载、改配置都在这一页。
 - **设置 → 内置插件**：只读列表，看运行状态用。
 
 两个页面的中文文案来自 `dsh-client-ui-plugin-manager` 与 `dsh-client-ui-settings-plugins` 的 locale，“插件”与“内置插件”是两个不同入口，别混。
+
+## 升级
+
+插件页原生支持升级：条目出现 **可更新** 时点 **更新**，流程是“检查 → 停止并移除旧版本 → 从 registry 安装新版本”，失败会自动重新安装原版本并把结果报成 `updateRestored`。升级后 Host 模块要重启才换。
+
+源码依据：`updateRefusal` 只对满足这些条件的条目开放更新——`installed` 为真、`availability: "profile"`、非 official、`source` 可解析为同名 registry 包、且不 `readOnlyReason`（承载插件管理的包不能自我移除）。`readOnlyReason` 这条意味着客户端界面类插件不能走升级流程。
+
+版本固化的坑见下节。
 
 ## 本地安装（开发期）
 
@@ -121,19 +139,27 @@ npm publish            # 私有 registry 加 --registry
 
 ## 升级已安装的插件
 
-`install_bundle` 对已存在的包会重建链接与行配置，但**新版本的 JavaScript 模块需要重启才加载**。本地链接安装时，重新应用插件行通常足够；从 tarball 或 registry 升级则按返回里的 `nextStep` 走。
+**首选插件页的“更新”。** 它自己检查新版本、停止并移除旧版本、安装新版本，失败时回滚。升级后 **Host 模块要重启才换**——新版本的文件已经在盘上，但旧模块还挂在进程里。
 
-从 npm 装的包不会自己跟着新版本走，要**先卸载再装**：
+`install_bundle` 对已存在的包会重建链接与行配置，但同样需要重启才加载新代码。本地链接安装时，重新应用插件行通常足够；从 tarball 或 registry 升级则按返回里的 `nextStep` 走。
+
+### 跨 minor 升级的版本固化坑
+
+profile 的 `package.json` 记的是安装时解析出的范围，`pnpm add` 会把它写成 `^x.y.z`。**`0.x` 的 caret 只锁 minor**：`^0.1.0` 的上界是 `0.2.0`，所以 0.2.0 发布后它不会跟过来。
+
+本机实际踩到过：profile 里是 `^0.1.0`，装的还是 0.1.0，而 0.2.0 已经发布。要跨 minor，卸载后重装并写精确版本：
 
 ```sh
 dsh plugin --profile desktop remove @qjysqjy/dsh-prompt-optimizer
 dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer@0.2.0
 ```
 
-从 GitHub 装的同理，重装才会拉到新提交。判断装的是哪一份，看 profile 的 `package.json`：`link:` 是本地路径，`github:` 是仓库，其余是 registry 版本。
+实测确认：干净目录里 `pnpm add @qjysqjy/dsh-prompt-optimizer` 解析到 0.2.0 并记成 `^0.2.0`；写精确 `@0.2.0` 也能装下来。**新版本等待期在这里没有实际拦截效果**——本机 pnpm 11.28.5 的 `minimumReleaseAge` 未配置（`config get` 返回 `undefined`），0.2.0 发布约 20 分钟后即可直接安装。
 
-**刚发布的版本写精确版本号。** pnpm 有 `minimumReleaseAge` 等待期（默认 24 小时），浮动范围会被静默压回上一个版本，而两种写法都报告成功——表现是“升级跑完了、版本没变”。已经踩过一次：profile 里 `@qjysqjy/dsh-prompt-optimizer` 被记成 `^0.1.0`，而 `^0.1.0` 的上界是 `0.2.0`（`0.x` 的 caret 只锁 minor），所以 0.2.0 发布后它仍然停在 0.1.0。写精确版本号，或把包名加进 profile 的 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude`。
+从 GitHub 装的同理，重装才会拉到新提交。判断装的是哪一份，看 profile 的 `package.json`：`link:` 是本地路径，`github:` 是仓库，其余是 registry 版本。
 
 ## 卸载
 
-用 `plugin_manager remove_bundle <包名>` 或 `dsh plugin --profile desktop remove <包名>`，不要手动删 profile 的 `package.json` 条目。手动删会留下指向不存在目录的 `link:`，下次启动直接失败。
+插件页里点该条目删除即可。命令行等价写法：`dsh plugin --profile desktop remove <包名>`（需先完全退出 Desktop），或 Agent 侧 `plugin_manager remove_bundle <包名>`。
+
+不要手动删 profile 的 `package.json` 条目。手动删会留下指向不存在目录的 `link:`，下次启动直接失败。
