@@ -1,0 +1,52 @@
+name: publish
+
+# Publishes the plugin package to npm through OIDC trusted publishing: no
+# long-lived token lives in this repository. The npm side must have a trusted
+# publisher configured for this exact workflow file (see docs/release.md).
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write # OIDC; without it npm cannot authenticate the publish
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+
+      # The tag is the release trigger, so a mismatch here would publish a
+      # version nobody asked for.
+      - name: Check the tag matches the package version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./packages/prompt-optimizer/package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "tag v$tag does not match packages/prompt-optimizer version $version" >&2
+            exit 1
+          fi
+
+      - name: Publish packages that are not on the registry yet
+        working-directory: packages/prompt-optimizer
+        run: |
+          name="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "$name@$version is already published; nothing to do"
+            exit 0
+          fi
+          npm publish

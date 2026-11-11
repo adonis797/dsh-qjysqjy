@@ -22,13 +22,23 @@
 
 ## 安装
 
-先在仓库根 `pnpm install`，再：
+已发布到 npm，直接装包即可，依赖会一起装好：
 
 ```text
-plugin_manager install_bundle <仓库根>/packages/prompt-optimizer
+plugin_manager install_bundle @qjysqjy/dsh-prompt-optimizer
 ```
 
-安装后刷新页面即可看到控件。改动 `lib/client.js` 后刷新页面生效；改动 `lib/index.js` 需要重新应用插件行（Host 模块已在进程里）。
+也可以在 **侧边栏 → 插件 → 添加插件** 里输入同一个包名。
+
+想跟 `main` 上的最新提交，从 GitHub 装：
+
+```text
+plugin_manager install_bundle github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer
+```
+
+要改代码就从本地克隆装：先在仓库根 `pnpm install`，再 `install_bundle <仓库根>/packages/prompt-optimizer`。本地路径只做链接、不装依赖，缺仓库根的 `node_modules` 会报 `ERR_MODULE_NOT_FOUND`。
+
+安装后刷新页面即可看到控件。本地安装时改动 `lib/client.js` 后刷新页面生效；改动 `lib/index.js` 需要重新应用插件行（Host 模块已在进程里）。
 
 ## 配置
 

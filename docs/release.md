@@ -1,4 +1,14 @@
-# 本地安装与发布
+# 安装与发布
+
+## 安装来源总览
+
+| 来源 | 写法 | 依赖 | 适合 |
+|---|---|---|---|
+| npm | `plugin_manager install_bundle @qjysqjy/dsh-prompt-optimizer` | pnpm 自动装 | 日常使用 |
+| GitHub | `plugin_manager install_bundle github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer` | pnpm 自动装 | 尝鲜 `main` |
+| 本地克隆 | `plugin_manager install_bundle <仓库根>/packages/…` | 要自己先 `pnpm install` | 改代码 |
+
+下面两节分别讲清 GitHub 与本地克隆的细节；从 npm 安装没有额外条件，填包名即可。
 
 ## 本地安装（开发期）
 
@@ -20,15 +30,51 @@ plugin_manager install_bundle <仓库根>/packages/prompt-optimizer
 
 **链接安装不会重新拷贝代码**：profile 里的那份就是仓库里的这份。所以“改了没生效”通常是 Host 模块缓存，而不是文件没同步。
 
-## 从仓库直接安装（给别人用）
+## 从 GitHub 安装（给别人用）
 
-对方克隆仓库后要先在仓库根跑 `pnpm install`，再 `install_bundle` 指向包目录。**不能省**：链接安装不会装包的依赖，声明了 `@deepseek-ai/schemastery` 的包少了仓库根的 `node_modules` 就会导入失败。
+```text
+plugin_manager install_bundle github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer
+```
 
-发布到 registry 的版本没有这个问题——`install_bundle` / `dsh plugin add` 走的是正常包安装，依赖会一起装进来。
+`#path:` 片段指向 monorepo 里的包目录，去掉就是仓库根——仓库根不是可安装的 bundle，会失败。这条来源装的是 `main` 上的最新提交，lockfile 会钉住当时的 commit；要某个确定的版本请用 npm 加精确版本号。
+
+Git / 压缩包来源的 `engines.dsh` 检查发生在**抓取之后**：不满足时安装会把 profile 清单与锁文件恢复原样，再报告失败。注册表来源则在 `pnpm` 运行前就拒绝，什么都不会下载。
 
 ## npm 发布
 
-包是公开发布也好、私有 registry 也好，步骤一致：
+**默认走 CI。** `.github/workflows/publish.yml` 在推送 `v*` 标签时运行：
+
+```bash
+# 1. 改 packages/<包>/package.json 的 version
+# 2. 本地跑一遍
+pnpm verify
+# 3. 提交、打标签、推送
+git commit -am "chore: release <包名> <版本>"
+git tag -a v<版本> -m "<包名> <版本>"
+git push && git push --follow-tags
+```
+
+工作流做三件事：跑 `pnpm verify`、核对标签与包版本一致（不一致直接失败，避免发错版本）、再发布。已经存在的版本会被跳过，所以重复推标签不会炸。
+
+### 一次性配置：Trusted Publisher
+
+CI 用 OIDC 认证，仓库里不存任何 token。首次启用前要在 npm 网页上把包和 workflow 绑起来：
+
+1. 打开 `https://www.npmjs.com/package/<包名>/settings`
+2. **Trusted Publisher** → **GitHub Actions**，填：
+   - Organization or user：`adonis797`
+   - Repository：`dsh-qjysqjy`
+   - Workflow filename：`publish.yml`
+   - Allowed actions：勾 **npm publish**
+3. 保存。配置本身不会被校验，写错只有发布时才报错。
+
+新配置要在 2 天内完成第一次成功发布，否则过期，得删掉重建。
+
+绑定好之后，可以到 **Settings → Publishing access** 选 **Require two-factor authentication and disallow tokens**，把本地 token 发布这条路彻底关掉。OIDC 不受该设置影响。
+
+### 手动发布（CI 不可用时）
+
+包里已声明 `publishConfig.access: public`，scoped 包不用再带 `--access public`：
 
 ```bash
 cd packages/prompt-optimizer
@@ -36,11 +82,20 @@ npm pack --dry-run     # 先核对实际打包清单
 npm publish            # 私有 registry 加 --registry
 ```
 
-发布前的三道自检：
+⚠️ 新包的默认发布策略要求 **2FA 或带 bypass-2FA 的 granular token**。账号没开 2FA 时，普通 token 会在 PUT 阶段被 403 拒绝，报「Two-factor authentication or granular access token with bypass 2fa enabled is required」。届时到 `https://www.npmjs.com/settings/<用户名>/tokens` 建一个 granular token，勾上 **Bypass two-factor authentication**，权限给 `Read and write`、范围选 `@qjysqjy`，写进 `~/.npmrc` 的 `//registry.npmjs.org/:_authToken=`。
 
-1. **`npm pack --dry-run` 里每个运行时文件都在。** 本地是软链接安装，`files` 不生效；发布后 `files` 才生效，缺文件就是“装上了但按钮没有”。
+发布前自检：
+
+1. **`npm pack --dry-run` 里每个运行时文件都在。** 本地是软链接安装，`files` 不生效；发布后 `files` 才生效，缺文件就是「装上了但按钮没有」。
 2. **`engines.dsh` 覆盖你实测过的版本**，并且没有写成一个宽到无意义的范围。市场用它来隐藏不兼容项，写宽了等于把风险转给用户。
 3. **`private` 为 `false` 或不存在**，`version` 已递增。
+4. **包内 README 是给人看的最终版。** npm 页面上渲染的是 tarball 里那份，改了仓库里的 README 但不发版，页面就是旧的。
+
+### 关于 `0.0.0-stage`
+
+本包首次发布时，registry 里多出一个 `0.0.0-stage` 版本（描述是 "Temporary package placeholder for staged publishing"，2 个文件、351 B）。这是 npm 在包名尚未存在时用来占位的一次性产物，**不是**本次 tarball 的内容，也不影响安装：`dist-tags.latest` 指向 `0.1.0`，装包名拿到的就是 `0.1.0`。
+
+它不能删（npm 不允许 unpublish 整个包的唯一版本），也不需要处理。真正存在且可装的是 `0.1.0`——`npm view @qjysqjy/dsh-prompt-optimizer versions` 会同时列出两者，别被 `0.0.0-stage` 误导。
 
 ## 版本与兼容性
 
@@ -51,6 +106,15 @@ npm publish            # 私有 registry 加 --registry
 ## 升级已安装的插件
 
 `install_bundle` 对已存在的包会重建链接与行配置，但**新版本的 JavaScript 模块需要重启才加载**。本地链接安装时，重新应用插件行通常足够；从 tarball 或 registry 升级则按返回里的 `nextStep` 走。
+
+从 npm 装的包不会自己跟着新版本走，要**先卸载再装**：
+
+```text
+plugin_manager remove_bundle @qjysqjy/dsh-prompt-optimizer
+plugin_manager install_bundle @qjysqjy/dsh-prompt-optimizer
+```
+
+从 GitHub 装的同理，重装才会拉到新提交。判断装的是哪一份，看 profile 的 `package.json`：`link:` 是本地路径，`github:` 是仓库，其余是 registry 版本。
 
 ## 卸载
 

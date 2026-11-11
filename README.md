@@ -14,10 +14,13 @@ dsh-qjysqjy/
 ├── scripts/
 │   ├── verify.mjs            # 全集合静态校验 + 各包测试
 │   └── new-plugin.mjs        # 从模板生成一个新包
+├── .github/workflows/
+│   ├── verify.yml            # 每次 push/PR 跑校验
+│   └── publish.yml           # 推 v* 标签时经 OIDC 发布到 npm
 ├── docs/
 │   ├── layout.md             # 目录结构约定与取舍理由
 │   ├── plugin-conventions.md # 插件工程约定（manifest、Host/Client、Config、展示资源）
-│   └── release.md            # 本地安装、npm 发布、兼容性声明
+│   └── release.md            # 安装来源、npm 发布、兼容性声明
 ├── AGENTS.md                 # 给 AI Agent 的工作规则
 ├── package.json              # 私有根包，只承载脚本与开发依赖
 └── pnpm-workspace.yaml
@@ -31,9 +34,31 @@ dsh-qjysqjy/
 
 | 包 | 作用 | 状态 |
 |---|---|---|
-| [`@qjysqjy/dsh-prompt-optimizer`](packages/prompt-optimizer/README.md) | 把输入框草稿就地改写为结构化提示词，一键还原、真实取消 | 0.1.0 |
+| [`@qjysqjy/dsh-prompt-optimizer`](packages/prompt-optimizer/README.md) | 把输入框草稿就地改写为结构化提示词，一键还原、真实取消 | 0.1.0，已发布到 npm |
 
 ## 安装一个插件
+
+插件是普通的 DSH bundle，装法就是 DSH 装 bundle 的那一种。三种来源，按你的场景挑一个。
+
+### 从 npm 安装（给使用者）
+
+最简单，依赖会一起装好：
+
+```text
+plugin_manager install_bundle @qjysqjy/dsh-prompt-optimizer
+```
+
+也可以填精确版本 `@qjysqjy/dsh-prompt-optimizer@0.1.0`，或在 **侧边栏 → 插件 → 添加插件** 里输入同一个包名。
+
+### 直接从 GitHub 安装（想跟最新提交）
+
+```text
+plugin_manager install_bundle github:adonis797/dsh-qjysqjy#path:/packages/prompt-optimizer
+```
+
+`#path:` 片段指向 monorepo 里的包目录。这条路径装的是 `main` 上的最新提交，会随仓库变动，适合试用而不是长期使用。
+
+### 从本地克隆安装（改代码时）
 
 先装依赖，再装插件：
 
@@ -47,9 +72,11 @@ plugin_manager install_bundle <本仓库中该包的绝对路径>
 
 例如 `<仓库根>/packages/prompt-optimizer`。
 
-**这一步不能跳。** `install_bundle` 只把包目录链接进 profile，**不会**为它安装依赖。包里的 `import '@deepseek-ai/schemastery'` 要靠仓库根的 `node_modules` 解析——少了它，安装结果会是 `application: failed`，报 `ERR_MODULE_NOT_FOUND`。`pnpm-workspace.yaml` 固定了 `nodeLinker: hoisted`，因为 Windows 上的 DSH Host 进程读不了 WSL 创建的符号链接。
+**这一步不能跳。** `install_bundle` 对本地路径只把包目录链接进 profile，**不会**为它安装依赖。包里的 `import '@deepseek-ai/schemastery'` 要靠仓库根的 `node_modules` 解析——少了它，安装结果会是 `application: failed`，报 `ERR_MODULE_NOT_FOUND`。`pnpm-workspace.yaml` 固定了 `nodeLinker: hoisted`，因为 Windows 上的 DSH Host 进程读不了 WSL 创建的符号链接。走 npm 或 GitHub 时没有这个问题，pnpm 会自己把依赖装进 profile。
 
-装好后在 **设置 → 插件** 里能看到该包一行，标题与图标来自包内 `locale/*.json` 与 `icon.svg`，不需要先激活插件。
+本地安装后改代码：改 `lib/client.js` 刷新页面即可；改 `lib/index.js` 需要重新应用插件行（Host 模块已在进程里）。
+
+装好后在 **侧边栏 → 插件** 里能看到该包一行，标题与图标来自包内 `locale/*.json` 与 `icon.svg`，不需要先激活插件。（**设置** 里的插件列表只读。）
 
 ## 新增一个插件
 
