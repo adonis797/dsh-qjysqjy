@@ -1,6 +1,6 @@
 {
   "name": "@qjysqjy/dsh-prompt-optimizer",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Rewrites the composer draft into a structured prompt in place, with one-click undo and true cancellation. 把输入框草稿就地改写为结构化提示词，支持一键还原与真实取消。",
   "type": "module",
   "license": "MIT",

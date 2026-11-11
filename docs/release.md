@@ -151,10 +151,10 @@ profile 的 `package.json` 记的是安装时解析出的范围，`pnpm add` 会
 
 ```sh
 dsh plugin --profile desktop remove @qjysqjy/dsh-prompt-optimizer
-dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer@0.2.0
+dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer@0.2.1
 ```
 
-实测确认：干净目录里 `pnpm add @qjysqjy/dsh-prompt-optimizer` 解析到 0.2.0 并记成 `^0.2.0`；写精确 `@0.2.0` 也能装下来。**新版本等待期在这里没有实际拦截效果**——本机 pnpm 11.28.5 的 `minimumReleaseAge` 未配置（`config get` 返回 `undefined`），0.2.0 发布约 20 分钟后即可直接安装。
+实测确认：干净目录里 `pnpm add @qjysqjy/dsh-prompt-optimizer` 解析到最新版并记成 `^0.2.x`；写精确版本也能装下来。**新版本等待期在这里没有实际拦截效果**——本机 pnpm 11.28.5 的 `minimumReleaseAge` 未配置（`config get` 返回 `undefined`）。
 
 从 GitHub 装的同理，重装才会拉到新提交。判断装的是哪一份，看 profile 的 `package.json`：`link:` 是本地路径，`github:` 是仓库，其余是 registry 版本。
 

@@ -35,7 +35,7 @@ dsh-qjysqjy/
 
 | 包 | 作用 | 状态 |
 |---|---|---|
-| [`@qjysqjy/dsh-prompt-optimizer`](packages/prompt-optimizer/README.md) | 把输入框草稿就地改写为结构化提示词，一键还原、真实取消 | 0.2.0，已发布到 npm |
+| [`@qjysqjy/dsh-prompt-optimizer`](packages/prompt-optimizer/README.md) | 把输入框草稿就地改写为结构化提示词，一键还原、真实取消 | 0.2.1，已发布到 npm |
 
 ## 安装
 
@@ -71,10 +71,10 @@ profile 的 `package.json` 记的是安装时解析到的范围。用 `pnpm add`
 
 ```sh
 dsh plugin --profile desktop remove @qjysqjy/dsh-prompt-optimizer
-dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer@0.2.0
+dsh plugin --profile desktop add @qjysqjy/dsh-prompt-optimizer@0.2.1
 ```
 
-自测过：新目录里 `pnpm add @qjysqjy/dsh-prompt-optimizer` 直接拿到 0.2.0 并记成 `^0.2.0`，写精确版本 `@0.2.0` 也装得下来，不会被新版本等待期挡住。
+自测过：新目录里 `pnpm add @qjysqjy/dsh-prompt-optimizer` 直接拿到最新版并记成 `^0.2.x`，写精确版本同样装得下来，不会被新版本等待期挡住。
 
 ### 命令行（`dsh` 可用时）
 
