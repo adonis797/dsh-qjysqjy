@@ -93,15 +93,15 @@ npm publish            # 私有 registry 加 --registry
 
 ### 关于 `0.0.0-stage`
 
-本包首次发布时，registry 里多出一个 `0.0.0-stage` 版本（描述是 "Temporary package placeholder for staged publishing"，2 个文件、351 B）。这是 npm 在包名尚未存在时用来占位的一次性产物，**不是**本次 tarball 的内容，也不影响安装：`dist-tags.latest` 指向 `0.1.0`，装包名拿到的就是 `0.1.0`。
+本包首次发布时，registry 里多出一个 `0.0.0-stage` 版本（描述是 "Temporary package placeholder for staged publishing"，2 个文件、351 B）。这是 npm 在包名尚未存在时用来占位的一次性产物，**不是**任何一次真实 tarball 的内容，也不影响安装：`dist-tags.latest` 指向最新正式版本，装包名拿到的是它。
 
-它不能删（npm 不允许 unpublish 整个包的唯一版本），也不需要处理。真正存在且可装的是 `0.1.0`——`npm view @qjysqjy/dsh-prompt-optimizer versions` 会同时列出两者，别被 `0.0.0-stage` 误导。
+它不能删（npm 不允许 unpublish 整个包的唯一版本），也不需要处理。`npm view <包名> versions` 会把它和正式版本一起列出，别被误导。
 
 ## 版本与兼容性
 
 - 插件版本独立递增，不跟 DSH 版本联动。
 - `engines.dsh` 用 DSH 的发布版本号，例如 `>=0.2.2-rc.1 <0.3.0-0`。`<0.3.0-0` 这种带 `-0` 的上界是刻意的：它把 `0.3.0` 的所有预发布版也排除在外，避免“下一个大版本的 rc 被当成兼容”。
-- 破坏性变更（改槽位、改配置字段名、改 HTTP 路径）必须升 minor 以上，并在 README 的变更段写清迁移方式。
+- 破坏性变更（改槽位、改配置字段名、改 HTTP 路径、**改任何配置项的默认值**）必须升 minor 以上，并在文档里写清迁移方式。`useContext` 从 `false` 改成 `true` 就是这类：改的是默认行为，装上新版本的人会立刻感受到差异，所以走的是 `0.1.0` → `0.2.0`。
 
 ## 升级已安装的插件
 

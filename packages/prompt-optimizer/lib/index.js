@@ -54,8 +54,8 @@ export const Config = z.object({
   contextTemplate: z.string().description(
     'Section appended when context is supplied. Supports {context}. Empty uses the built-in one.',
   ),
-  useContext: z.boolean().default(false).description(
-    'Send recent Session messages as background to the model. Off by default: it costs tokens and can bias the rewrite.',
+  useContext: z.boolean().default(true).description(
+    'Send recent Session messages as background to the model. On by default; turn it off to spend fewer tokens or to keep the rewrite strictly draft-local.',
   ),
   maxContextChars: z.number().step(1).min(0).max(20000).default(MAX_CONTEXT_CHARS)
     .description('Characters of Session context retained when context is enabled.'),
@@ -82,7 +82,7 @@ export function apply(ctx, config) {
     userTemplate: config.userTemplate ?? '',
     revisionTemplate: config.revisionTemplate ?? '',
     contextTemplate: config.contextTemplate ?? '',
-    useContext: config.useContext === true,
+    useContext: config.useContext !== false,
     maxContextChars: config.maxContextChars ?? MAX_CONTEXT_CHARS,
     maxDraftChars: config.maxDraftChars ?? MAX_DRAFT_CHARS,
     maxOutputTokens: config.maxOutputTokens ?? 4096,

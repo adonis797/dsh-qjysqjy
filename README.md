@@ -20,6 +20,7 @@ dsh-qjysqjy/
 ├── docs/
 │   ├── layout.md             # 目录结构约定与取舍理由
 │   ├── plugin-conventions.md # 插件工程约定（manifest、Host/Client、Config、展示资源）
+│   ├── prompt-optimizer.md   # 该插件的已知限制与验证范围
 │   └── release.md            # 安装来源、npm 发布、兼容性声明
 ├── AGENTS.md                 # 给 AI Agent 的工作规则
 ├── package.json              # 私有根包，只承载脚本与开发依赖
@@ -34,7 +35,7 @@ dsh-qjysqjy/
 
 | 包 | 作用 | 状态 |
 |---|---|---|
-| [`@qjysqjy/dsh-prompt-optimizer`](packages/prompt-optimizer/README.md) | 把输入框草稿就地改写为结构化提示词，一键还原、真实取消 | 0.1.0，已发布到 npm |
+| [`@qjysqjy/dsh-prompt-optimizer`](packages/prompt-optimizer/README.md) | 把输入框草稿就地改写为结构化提示词，一键还原、真实取消 | 0.2.0，已发布到 npm |
 
 ## 安装一个插件
 
@@ -48,7 +49,7 @@ dsh-qjysqjy/
 plugin_manager install_bundle @qjysqjy/dsh-prompt-optimizer
 ```
 
-也可以填精确版本 `@qjysqjy/dsh-prompt-optimizer@0.1.0`，或在 **侧边栏 → 插件 → 添加插件** 里输入同一个包名。
+也可以填精确版本 `@qjysqjy/dsh-prompt-optimizer@0.2.0`，或在 **侧边栏 → 插件 → 添加插件** 里输入同一个包名。
 
 ### 直接从 GitHub 安装（想跟最新提交）
 
